@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sri Lanka Customs ASYCUDA & CUSDEC Auto-Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* CUSDEC Schedule II Print Layout */
+    .cusdec-sheet {
+      width: 210mm;
+      min-height: 297mm;
+      background: #fff;
+      color: #000;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 7.5pt;
+      line-height: 1.15;
+      padding: 6mm;
+      box-sizing: border-box;
+      border: 1px solid #cbd5e1;
+    }
+    .cusdec-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    .cusdec-table td, .cusdec-table th {
+      border: 1px solid #000;
+      padding: 2px 4px;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+    .box-num {
+      font-weight: bold;
+      font-size: 7pt;
+      display: inline-block;
+      margin-right: 3px;
+    }
+    .box-label {
+      font-size: 6.5pt;
+      color: #111;
+    }
+    .box-val {
+      font-weight: bold;
+      font-size: 8pt;
+      margin-top: 2px;
+      text-transform: uppercase;
+    }
+    @media print {
+      body * { visibility: hidden; }
+      #cusdec-printable, #cusdec-printable * { visibility: visible; }
+      #cusdec-printable {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 210mm;
+        border: none;
+        padding: 4mm;
+        margin: 0;
+        box-shadow: none !important;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-4">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="bg-slate-900 px-6 py-6 text-center border-b border-slate-800">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-lg mb-3 shadow-lg">
+          SL
+        </div>
+        <h1 class="text-lg font-bold text-white tracking-tight">SL Customs ASYCUDA Portal</h1>
+        <p class="text-xs text-slate-400 mt-1">CUSDEC &amp; XML Auto-Generator System</p>
+      </div>
+
+      <form onsubmit="handleLogin(event)" class="p-6 space-y-4">
+        <div id="login-error" class="hidden bg-red-50 border border-red-200 text-red-700 text-xs font-medium px-3 py-2 rounded-lg">
+          Invalid username or password. Please try again.
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Username / Declarant ID</label>
+          <input id="login-username" type="text" required placeholder="Enter username" autocomplete="username"
+            class="w-full text-sm border border-slate-300 rounded-lg px-3.5 py-2.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Password</label>
+          <div class="relative">
+            <input id="login-password" type="password" required placeholder="Enter password" autocomplete="current-password"
+              class="w-full text-sm border border-slate-300 rounded-lg px-3.5 py-2.5 pr-16 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none" />
+            <button type="button" onclick="togglePasswordVisibility()" id="toggle-pw-btn"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-800">
+              Show
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs">
+          <label class="flex items-center gap-2 text-slate-600 cursor-pointer">
+            <input id="remember-me" type="checkbox" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+            <span>Keep me signed in</span>
+          </label>
+          <button type="button" onclick="fillDemoCredentials()" class="text-emerald-700 hover:text-emerald-600 font-semibold">
+            Fill Admin Login
+          </button>
+        </div>
+
+        <button type="submit"
+          class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm py-2.5 rounded-lg shadow-md transition">
+          Sign In to System
+        </button>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-[11px] text-slate-600 space-y-1">
+          <div class="font-bold text-slate-700">Default System Accounts:</div>
+          <div class="flex justify-between"><span>Admin: <code class="font-mono font-bold text-slate-900">admin</code></span><span>Password: <code class="font-mono font-bold text-slate-900">admin123</code></span></div>
+          <div class="flex justify-between"><span>Declarant: <code class="font-mono font-bold text-slate-900">lalan</code></span><span>Password: <code class="font-mono font-bold text-slate-900">lalan2026</code></span></div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- USER MANAGEMENT & PASSWORD MODAL -->
+  <div id="user-modal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden">
+      <div class="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold tracking-wide uppercase">User &amp; Password Management</h2>
+          <p class="text-[11px] text-slate-400">Change password or manage authorized system users</p>
+        </div>
+        <button type="button" onclick="closeUserModal()" class="text-slate-400 hover:text-white text-lg font-bold px-2">&times;</button>
+      </div>
+
+      <div class="p-5 space-y-6 max-h-[82vh] overflow-y-auto">
+        <!-- Change Own Password -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+          <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Change My Password (<span id="modal-current-user" class="text-emerald-700"></span>)</h3>
+          <div id="pw-change-msg" class="hidden text-xs font-medium px-3 py-2 rounded-lg"></div>
+          <form onsubmit="handleChangeOwnPassword(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Current Password</label>
+              <input id="old-pw-input" type="password" required class="w-full text-xs border border-slate-300 rounded-lg px-2.5 py-2" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">New Password</label>
+              <input id="new-pw-input" type="password" required minlength="4" class="w-full text-xs border border-slate-300 rounded-lg px-2.5 py-2" />
+            </div>
+            <div class="flex items-end">
+              <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold py-2 px-3 rounded-lg transition">
+                Update Password
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Admin Only: Add & Manage Users -->
+        <div id="admin-user-section" class="space-y-4">
+          <div class="border-t border-slate-200 pt-4">
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Add New System User (Admin Only)</h3>
+            <div id="add-user-msg" class="hidden text-xs font-medium px-3 py-2 rounded-lg mb-3"></div>
+            <form onsubmit="handleAddUser(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Username</label>
+                <input id="new-username" type="text" required placeholder="e.g. nuwan" class="w-full text-xs border border-slate-300 rounded-lg px-2.5 py-2" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Display Name / Role</label>
+                <input id="new-user-role" type="text" required placeholder="e.g. Export Clerk" class="w-full text-xs border border-slate-300 rounded-lg px-2.5 py-2" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Password</label>
+                <input id="new-user-pass" type="text" required minlength="4" placeholder="Min 4 chars" class="w-full text-xs border border-slate-300 rounded-lg px-2.5 py-2" />
+              </div>
+              <div class="flex items-end">
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2 px-3 rounded-lg transition">
+                  + Add User
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Users List Table -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Authorized Users List</h3>
+              <button type="button" onclick="resetDefaultUsers()" class="text-[11px] text-slate-500 hover:text-red-600 underline">
+                Reset to Default Accounts
+              </button>
+            </div>
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+                  <tr>
+                    <th class="px-3 py-2">Username</th>
+                    <th class="px-3 py-2">Role / Name</th>
+                    <th class="px-3 py-2">Type</th>
+                    <th class="px-3 py-2 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-body" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end">
+        <button type="button" onclick="closeUserModal()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-4 py-2 rounded-lg">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION -->
+  <div id="app-container" class="hidden">
+    <!-- Top Navbar -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="bg-emerald-500 text-slate-950 font-bold px-2.5 py-1 rounded text-sm">SL CUSTOMS</div>
+          <div>
+            <h1 class="text-base md:text-lg font-bold tracking-tight">ASYCUDA World XML &amp; CUSDEC Auto-Generator</h1>
+            <p class="text-xs text-slate-400">Commercial Invoice PDF Extractor &rarr; Customs-53 &amp; XML Export</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="openUserModal()" id="logged-user-badge" title="Click to manage users or change password"
+            class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-400 text-xs font-semibold px-2.5 py-1.5 rounded flex items-center gap-1.5 transition">
+            <span id="badge-text">User: Admin</span>
+            <span class="text-[10px] bg-slate-700 text-slate-200 px-1.5 py-0.5 rounded">Users / PW</span>
+          </button>
+          <button type="button" onclick="clearInvoiceFields()" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-medium px-3 py-1.5 rounded transition">
+            Clear All
+          </button>
+          <button type="button" onclick="loadSampleData()" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-medium px-3 py-1.5 rounded transition">
+            Load Sample (SESO007299)
+          </button>
+          <button type="button" onclick="downloadXML()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded shadow transition">
+            Download XML
+          </button>
+          <button type="button" onclick="printCusdec()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded shadow transition">
+            Print / Save CUSDEC PDF
+          </button>
+          <button type="button" onclick="handleLogout()" class="bg-red-600/90 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded shadow transition">
+            Logout
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="bg-slate-800 border-t border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 flex gap-1">
+          <button type="button" id="tab-btn-1" onclick="switchTab(1)" class="tab-btn px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 border-emerald-400 text-emerald-400">
+            1. Invoice Extractor &amp; Data Form
+          </button>
+          <button type="button" id="tab-btn-2" onclick="switchTab(2)" class="tab-btn px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 border-transparent text-slate-300 hover:text-white">
+            2. ASYCUDA World XML Preview
+          </button>
+          <button type="button" id="tab-btn-3" onclick="switchTab(3)" class="tab-btn px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 border-transparent text-slate-300 hover:text-white">
+            3. CUSDEC Schedule II (Customs-53)
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-6">
+
+      <!-- TAB 1: INVOICE EXTRACTOR & FORM -->
+      <section id="tab-1" class="space-y-6">
+        <!-- Upload & Paste Box -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Upload Commercial Invoice PDF</h2>
+              <div id="drop-zone" onclick="document.getElementById('pdf-upload').click()" class="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer bg-slate-50 hover:bg-emerald-50/40 hover:border-emerald-400 transition">
+                <div class="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
+                  <svg class="w-8 h-8 mb-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                  <p class="text-sm text-slate-700 font-medium">Click or Drag &amp; Drop <span class="font-bold text-emerald-700">INVOICE.pdf</span></p>
+                  <p class="text-xs text-slate-600 mt-1 font-medium" id="upload-status">Extracts Invoice No, Date, Consignee, Vessel, Qty, Weights &amp; Value automatically</p>
+                </div>
+                <input id="pdf-upload" type="file" accept=".pdf,application/pdf" class="hidden" onchange="handlePDFUpload(event)" />
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Extracted / Raw Invoice Text</h2>
+                <button type="button" onclick="parseRawText()" class="text-xs bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded font-medium">Parse Text</button>
+              </div>
+              <textarea id="raw-invoice-text" rows="5" placeholder="Uploaded PDF text will appear here automatically, or you can paste invoice text..." class="w-full text-xs mono border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editable Customs & Invoice Data Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          <!-- Exporter & Declarant -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
+            <h3 class="text-sm font-bold text-slate-800 border-b pb-2">Exporter &amp; Declarant Profile</h3>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600">Exporter TIN</label>
+              <input id="exporter_tin" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600">Exporter Name &amp; Address</label>
+              <textarea id="exporter_name" rows="3" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5"></textarea>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600">Declarant TIN</label>
+              <input id="declarant_tin" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600">Declarant Name &amp; Address</label>
+              <textarea id="declarant_name" rows="3" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Customs Office</label>
+                <input id="office_code" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Warehouse ID</label>
+                <input id="warehouse_id" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Consignee & Shipment Details -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
+            <h3 class="text-sm font-bold text-slate-800 border-b pb-2">Consignee &amp; Transport Details</h3>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Invoice / Ref No</label>
+                <input id="invoice_no" type="text" oninput="syncAll()" class="w-full mt-1 text-xs font-bold border border-slate-300 rounded px-2.5 py-1.5 bg-amber-50" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Invoice Date</label>
+                <input id="invoice_date" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600">Consignee Name &amp; Address</label>
+              <textarea id="consignee_name" rows="4" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Vessel Name</label>
+                <input id="vessel_name" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Voyage / Sailing Date</label>
+                <input id="voyage_date" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Dest. Country</label>
+                <input id="dest_country_code" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Port Code</label>
+                <input id="port_code" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Port Name</label>
+                <input id="port_name" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Bank Code</label>
+                <input id="bank_code" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Bank Name</label>
+                <input id="bank_name" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Terms / Delivery</label>
+                <input id="incoterm" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Goods, HS Code & Valuation -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
+            <h3 class="text-sm font-bold text-slate-800 border-b pb-2">Goods, Weights &amp; Valuation</h3>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600">Customs Goods Description</label>
+              <input id="goods_desc" type="text" oninput="syncAll()" class="w-full mt-1 text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5" />
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">HS Code</label>
+                <input id="hs_code" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Procedure</label>
+                <input id="proc_code" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Nat. Proc</label>
+                <input id="nat_proc" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Packages (CT)</label>
+                <input id="packages" type="number" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Gross Wt (Kg)</label>
+                <input id="gross_weight" type="number" step="0.01" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Net Wt (Kg)</label>
+                <input id="net_weight" type="number" step="0.01" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Container / Marks</label>
+                <input id="container_marks" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Preference / Quota</label>
+                <input id="pref_quota" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Currency</label>
+                <input id="currency" type="text" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">FOB Value</label>
+                <input id="fob_value" type="number" step="0.01" oninput="syncAll()" class="w-full mt-1 text-xs font-bold border border-slate-300 rounded px-2.5 py-1.5 bg-emerald-50" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600">Customs Ex.Rate</label>
+                <input id="ex_rate" type="number" step="0.0001" oninput="syncAll()" class="w-full mt-1 text-xs border border-slate-300 rounded px-2.5 py-1.5" />
+              </div>
+            </div>
+            <div class="bg-slate-900 text-white rounded-lg p-3 flex items-center justify-between">
+              <div>
+                <div class="text-[11px] text-slate-400">Calculated Statistical Value (LKR)</div>
+                <div id="stat_value_display" class="text-base font-bold text-emerald-400">LKR 8,687,667</div>
+              </div>
+              <div class="text-right">
+                <div class="text-[11px] text-slate-400">Reg / Assmt No</div>
+                <div id="reg_assmt_display" class="text-xs font-mono">E 31743 / A 31913</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 2: ASYCUDA WORLD XML PREVIEW -->
+      <section id="tab-2" class="hidden space-y-4">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-bold text-slate-800">ASYCUDA World Export Declaration XML</h2>
+            <p class="text-xs text-slate-500">Ready for direct upload to Sri Lanka Customs ASYCUDA World portal</p>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" onclick="copyXML()" id="copy-xml-btn" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium px-3 py-1.5 rounded">
+              Copy XML to Clipboard
+            </button>
+            <button type="button" onclick="downloadXML()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded">
+              Download .XML File
+            </button>
+          </div>
+        </div>
+        <div class="bg-slate-950 text-emerald-300 rounded-xl p-4 overflow-x-auto shadow-inner border border-slate-800">
+          <pre id="xml-output" class="text-xs mono leading-relaxed"></pre>
+        </div>
+      </section>
+
+      <!-- TAB 3: CUSDEC SCHEDULE II (CUSTOMS-53) -->
+      <section id="tab-3" class="hidden space-y-4">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-bold text-slate-800">CUSDEC I — Schedule II (Sri Lanka Customs - Goods Declaration)</h2>
+            <p class="text-xs text-slate-500">Formatted to exact A4 dimensions for printing or PDF export</p>
+          </div>
+          <button type="button" onclick="printCusdec()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded shadow">
+            Print / Save as PDF (A4)
+          </button>
+        </div>
+
+        <div class="flex justify-center overflow-x-auto pb-8">
+          <div id="cusdec-printable" class="cusdec-sheet shadow-lg">
+            <!-- Title Header -->
+            <div class="flex justify-between items-end border-b-2 border-black pb-1 mb-1">
+              <div class="font-bold text-[9pt]">SCHEDULE II &nbsp;&nbsp;&nbsp; CUSDEC I</div>
+              <div class="font-bold text-[10pt] tracking-wide">SRI LANKA CUSTOMS - GOODS DECLARATION</div>
+              <div class="font-bold text-[8.5pt]">Customs - 53</div>
+            </div>
+
+            <table class="cusdec-table">
+              <colgroup>
+                <col style="width: 4%" />
+                <col style="width: 23%" />
+                <col style="width: 23%" />
+                <col style="width: 12%" />
+                <col style="width: 12%" />
+                <col style="width: 13%" />
+                <col style="width: 13%" />
+              </colgroup>
+              <!-- Row 1: Exporter & Box 1, 3, 4 -->
+              <tr>
+                <td rowspan="7" class="text-center font-bold align-middle" style="writing-mode: vertical-rl; transform: rotate(180deg); font-size: 8pt;">
+                  DECLARATION
+                </td>
+                <td colspan="2" rowspan="3">
+                  <div class="flex justify-between">
+                    <span><span class="box-num">2</span><span class="box-label">Exporter</span></span>
+                    <span class="box-label">TIN: <strong id="c_exp_tin">1140487717000</strong></span>
+                  </div>
+                  <div id="c_exp_name" class="box-val whitespace-pre-line"></div>
+                </td>
+                <td>
+                  <div><span class="box-num">1</span><span class="box-label">DECLARATION</span></div>
+                  <div class="box-val text-center">EX &nbsp;|&nbsp; 1 &nbsp;|&nbsp; 01</div>
+                </td>
+                <td colspan="3">
+                  <div class="box-label">Header Information</div>
+                  <div class="box-val"><span id="c_office_code">BIBE1</span> - Biyagama Boi Exports (Sea Cargo)</div>
+                  <div class="text-[6.5pt] mt-0.5">Customs Reference Number:</div>
+                </td>
+              </tr>
+              <!-- Row 2: Box 3, 4 -->
+              <tr>
+                <td>
+                  <div><span class="box-num">3</span><span class="box-label">Forms</span></div>
+                  <div class="box-val text-center">1 &nbsp;|&nbsp; 1</div>
+                </td>
+                <td>
+                  <div><span class="box-num">4</span><span class="box-label">Load List</span></div>
+                  <div class="box-val text-center">&nbsp;</div>
+                </td>
+                <td colspan="2" class="bg-slate-50">
+                  <div class="font-bold text-[7.5pt]" id="c_reg_no">E 31743 &nbsp;&nbsp; 13/11/2026</div>
+                  <div class="box-label">Manifest</div>
+                </td>
+              </tr>
+              <!-- Row 3: Box 5, 6, 7 -->
+              <tr>
+                <td>
+                  <div><span class="box-num">5</span><span class="box-label">Items</span></div>
+                  <div class="box-val text-center">1</div>
+                </td>
+                <td>
+                  <div><span class="box-num">6</span><span class="box-label">Total Packages</span></div>
+                  <div id="c_tot_pkg" class="box-val text-center">1,008.00</div>
+                </td>
+                <td colspan="2">
+                  <div><span class="box-num">7</span><span class="box-label">Declarant's Sequence Number</span></div>
+                  <div class="box-val">2026 &nbsp;&nbsp; <span id="c_seq_ref">SESO007299</span></div>
+                </td>
+              </tr>
+              <!-- Row 4: Consignee & Box 9 -->
+              <tr>
+                <td colspan="2" rowspan="2">
+                  <div class="flex justify-between">
+                    <span><span class="box-num">8</span><span class="box-label">Consignee</span></span>
+                    <span class="box-label">TIN:</span>
+                  </div>
+                  <div id="c_consignee" class="box-val whitespace-pre-line"></div>
+                </td>
+                <td colspan="3">
+                  <div class="flex justify-between">
+                    <span><span class="box-num">9</span><span class="box-label">Person Responsible for Financial Settlement</span></span>
+                    <span class="box-label">TIN:</span>
+                  </div>
+                  <div class="box-val">&nbsp;</div>
+                </td>
+                <td rowspan="2">
+                  <div class="box-label font-bold">Release Order</div>
+                  <div class="text-[7pt] mt-1">granted</div>
+                </td>
+              </tr>
+              <!-- Row 5: Box 10, 11, 13 -->
+              <tr>
+                <td>
+                  <div><span class="box-num">10</span><span class="box-label">Cty of Last Cons/First Dst.</span></div>
+                  <div id="c_cty_first" class="box-val text-center">AU</div>
+                </td>
+                <td>
+                  <div><span class="box-num">11</span><span class="box-label">Trading Cty.</span></div>
+                  <div id="c_cty_trade" class="box-val text-center">AU</div>
+                </td>
+                <td>
+                  <div><span class="box-num">13</span><span class="box-label">C.A.P.</span></div>
+                  <div class="box-val text-center">1</div>
+                </td>
+              </tr>
+              <!-- Row 6: Declarant & Box 15, 16, 17 -->
+              <tr>
+                <td colspan="2" rowspan="2">
+                  <div class="flex justify-between">
+                    <span><span class="box-num">14</span><span class="box-label">Declarant/Representative</span></span>
+                    <span class="box-label">TIN: <strong id="c_dec_tin">5901734287000</strong></span>
+                  </div>
+                  <div id="c_dec_name" class="box-val whitespace-pre-line"></div>
+                </td>
+                <td colspan="2">
+                  <div><span class="box-num">15</span><span class="box-label">Country of Export</span></div>
+                  <div class="box-val">Sri Lanka</div>
+                </td>
+                <td>
+                  <div><span class="box-num">15</span><span class="box-label">Cty. Ex. Code</span></div>
+                  <div class="box-val text-center">a LK &nbsp;|&nbsp; b</div>
+                </td>
+                <td>
+                  <div><span class="box-num">17A</span><span class="box-label">Cty. Dst. Code</span></div>
+                  <div class="box-val text-center">a <span id="c_dst_code_a">AU</span> &nbsp;|&nbsp; b</div>
+                </td>
+              </tr>
+              <!-- Row 7: Box 16, 17 -->
+              <tr>
+                <td colspan="2">
+                  <div><span class="box-num">16</span><span class="box-label">Country of origin</span></div>
+                  <div class="box-val">Sri Lanka</div>
+                </td>
+                <td colspan="2">
+                  <div><span class="box-num">17</span><span class="box-label">Country of destination</span></div>
+                  <div id="c_dst_name" class="box-val">Australia</div>
+                </td>
+              </tr>
+              <!-- Row 8: Vessel, Container, Delivery Terms -->
+              <tr>
+                <td rowspan="4" class="text-center font-bold align-middle" style="writing-mode: vertical-rl; transform: rotate(180deg); font-size: 7.5pt;">
+                  TRANSPORT
+                </td>
+                <td>
+                  <div><span class="box-num">18</span><span class="box-label">Vessel/Flight</span></div>
+                  <div id="c_vessel" class="box-val">CMA CGM MANTA RAY &nbsp;&nbsp; AU</div>
+                </td>
+                <td>
+                  <div><span class="box-num">19</span><span class="box-label">Ctr.</span></div>
+                  <div class="box-val text-center">yes</div>
+                </td>
+                <td colspan="4">
+                  <div><span class="box-num">20</span><span class="box-label">Delivery Terms</span></div>
+                  <div id="c_incoterm" class="box-val">FOB</div>
+                </td>
+              </tr>
+              <!-- Row 9: Voyage, Currency, Ex Rate -->
+              <tr>
+                <td>
+                  <div><span class="box-num">21</span><span class="box-label">Voyage No./Date</span></div>
+                  <div id="c_voyage" class="box-val">P0E1 15/11/2026</div>
+                </td>
+                <td>
+                  <div><span class="box-num">22</span><span class="box-label">Currency &amp; Total Amount Invoiced</span></div>
+                  <div class="box-val"><span id="c_curr">USD</span> &nbsp;&nbsp;&nbsp; <span id="c_inv_amt">25,779.00</span></div>
+                </td>
+                <td colspan="2">
+                  <div><span class="box-num">23</span><span class="box-label">Exchange Rate</span></div>
+                  <div id="c_ex_rate" class="box-val">337.0056</div>
+                </td>
+                <td colspan="2">
+                  <div><span class="box-num">24</span><span class="box-label">Nature of Transt.</span></div>
+                  <div class="box-val">&nbsp;</div>
+                </td>
+              </tr>
+              <!-- Row 10: Mode of Transport, Port, Banking -->
+              <tr>
+                <td>
+                  <div class="grid grid-cols-2">
+                    <div>
+                      <span class="box-num">25</span><span class="box-label">Mode Trans. at Border</span>
+                      <div class="box-val text-center">1</div>
+                    </div>
+                    <div class="border-l border-black pl-1">
+                      <span class="box-num">26</span><span class="box-label">Inland Mode</span>
+                      <div class="box-val">&nbsp;</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div><span class="box-num">27</span><span class="box-label">Place of Loading/Discharging</span></div>
+                  <div class="box-val"><span id="c_port_code">AUMEL</span> &nbsp;&nbsp; <span id="c_port_name">MELBOURNE</span></div>
+                </td>
+                <td colspan="4" rowspan="2">
+                  <div class="flex justify-between">
+                    <span><span class="box-num">28</span><span class="box-label">Financial and banking data</span></span>
+                    <span class="box-label">Bank Code: <strong id="c_bank_code">7278</strong></span>
+                  </div>
+                  <div class="mt-1 text-[7pt]">
+                    Terms of payment: <strong>70 Open Account</strong><br/>
+                    Bank Name: <strong id="c_bank_name">Sampath Bank</strong> &nbsp;&nbsp; Branch: <strong>001</strong><br/>
+                    Ref. No: <strong id="c_bank_ref">SESO007299</strong>
+                  </div>
+                </td>
+              </tr>
+              <!-- Row 11: Office of Entry/Exit, Location -->
+              <tr>
+                <td>
+                  <div><span class="box-num">29</span><span class="box-label">Office of Entry/Exit</span></div>
+                  <div class="box-val">VSEZG &nbsp; Sepz - Green Channel</div>
+                </td>
+                <td>
+                  <div><span class="box-num">30</span><span class="box-label">Location of Goods</span></div>
+                  <div class="box-val">CWIT</div>
+                </td>
+              </tr>
+
+              <!-- ITEM SECTION -->
+              <tr>
+                <td rowspan="5" class="text-center font-bold align-middle" style="writing-mode: vertical-rl; transform: rotate(180deg); font-size: 7.5pt;">
+                  GOODS DETAILS
+                </td>
+                <td colspan="2" rowspan="4">
+                  <div><span class="box-num">31</span><span class="box-label">Packages and Description of Goods</span></div>
+                  <div class="mt-1 text-[7pt]">
+                    <div>Marks &amp; Nos: <strong id="c_marks">01X20FT FCL</strong></div>
+                    <div class="mt-1">Number &amp; Kind: <strong id="c_pkg_kind">1,008.00 CT Carton</strong></div>
+                    <div class="mt-2">Description:</div>
+                    <div id="c_goods_desc" class="box-val text-[8.5pt] mt-0.5">870,912 PCS OF LATEX GLOVES</div>
+                  </div>
+                </td>
+                <td>
+                  <div><span class="box-num">32</span><span class="box-label">Item No.</span></div>
+                  <div class="box-val text-center">1</div>
+                </td>
+                <td colspan="3">
+                  <div><span class="box-num">33</span><span class="box-label">Commodity (HS) Code</span></div>
+                  <div class="box-val"><span id="c_hs_code">40151900</span> &nbsp;&nbsp;&nbsp; 00</div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div><span class="box-num">34</span><span class="box-label">Cty. Orig. Code</span></div>
+                  <div class="box-val text-center">a LK &nbsp;|&nbsp; b</div>
+                </td>
+                <td>
+                  <div><span class="box-num">35</span><span class="box-label">Gross Mass (Kg)</span></div>
+                  <div id="c_gross_wt" class="box-val text-right">5,714.60</div>
+                </td>
+                <td colspan="2">
+                  <div><span class="box-num">36</span><span class="box-label">Preference</span></div>
+                  <div id="c_pref" class="box-val text-center">GSP</div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div><span class="box-num">37</span><span class="box-label">Procedure Code</span></div>
+                  <div id="c_proc" class="box-val text-center">1378 &nbsp;|&nbsp; 95N</div>
+                </td>
+                <td>
+                  <div><span class="box-num">38</span><span class="box-label">Net Mass (Kg)</span></div>
+                  <div id="c_net_wt" class="box-val text-right">4,615.80</div>
+                </td>
+                <td colspan="2">
+                  <div><span class="box-num">39</span><span class="box-label">Quota</span></div>
+                  <div id="c_quota" class="box-val text-center">1-20</div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="4">
+                  <div><span class="box-num">40</span><span class="box-label">Previous Document / BL No. / AWB No.</span></div>
+                  <div class="box-val">&nbsp;</div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  <div><span class="box-num">44</span><span class="box-label">Add. Info / Documents Produced / Certificates &amp; Authorizations</span></div>
+                  <div class="mt-1 text-[7pt]">
+                    Licence No: <strong id="c_lic_curr">USD</strong> &nbsp;&nbsp; D.Val: <strong id="c_dval">25,779</strong> &nbsp;&nbsp; D.Qty: <strong id="c_dqty">4616</strong><br/>
+                    Attached Doc: <strong id="c_att_doc">380(SESO007299</strong>
+                  </div>
+                </td>
+                <td>
+                  <div><span class="box-num">41</span><span class="box-label">UOM &amp; Qty. 1</span></div>
+                  <div class="box-val">KGM <span id="c_uom_qty">4,615.80</span></div>
+                </td>
+                <td>
+                  <div><span class="box-num">42</span><span class="box-label">Item Price</span></div>
+                  <div id="c_item_price" class="box-val text-right">25,779</div>
+                </td>
+                <td>
+                  <div><span class="box-num">43</span><span class="box-label">V.M.</span></div>
+                  <div class="box-val text-center">0-0</div>
+                </td>
+                <td>
+                  <div><span class="box-num">46</span><span class="box-label">Statistical Value</span></div>
+                  <div id="c_stat_val" class="box-val text-right">8,687,667</div>
+                </td>
+              </tr>
+
+              <!-- TAXES & ACCOUNTING -->
+              <tr>
+                <td rowspan="2" class="text-center font-bold align-middle" style="writing-mode: vertical-rl; transform: rotate(180deg); font-size: 7pt;">
+                  TAXES
+                </td>
+                <td colspan="2">
+                  <div><span class="box-num">47</span><span class="box-label">Calculation of Taxes</span></div>
+                  <div class="grid grid-cols-5 text-[6.5pt] border-b border-black mt-1 font-bold">
+                    <span>Type</span><span>Tax Base</span><span>Rate</span><span>Amount</span><span>MP</span>
+                  </div>
+                  <div class="h-10 flex items-end justify-end font-bold text-[7.5pt]">Total: 0</div>
+                </td>
+                <td colspan="4">
+                  <div><span class="box-num">48</span><span class="box-label">A.C. Number</span> &nbsp;&nbsp; <span class="box-num">49</span><span class="box-label">Identification of warehouse &amp; period</span></div>
+                  <div id="c_warehouse" class="box-val mt-1">7804232M03AS0400 &nbsp;&nbsp;&nbsp; 100</div>
+                  <div class="border-t border-black mt-2 pt-1">
+                    <div class="font-bold text-[7pt]">B. ACCOUNTING DETAILS</div>
+                    <div class="text-[6.8pt] mt-0.5">
+                      Mode of Payment: <strong>CASH</strong><br/>
+                      Assessment Number: <strong id="c_assmt_no">A 31913</strong> &nbsp;&nbsp; Date: <strong>13/11/2026</strong><br/>
+                      Total Declaration: <strong>Rs. 0 LKR</strong>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  <div><span class="box-num">50</span><span class="box-label">C. (Total Invoiced Amount)</span></div>
+                  <div class="grid grid-cols-2 text-[7pt] mt-1">
+                    <div>Invoice Value: <strong id="c_c_curr">USD</strong></div>
+                    <div class="text-right font-bold" id="c_c_val">25,779.00</div>
+                    <div>Freight:</div><div class="text-right">0.00</div>
+                    <div>Insurance:</div><div class="text-right">0.00</div>
+                    <div>Other:</div><div class="text-right">0.00</div>
+                  </div>
+                </td>
+                <td colspan="4">
+                  <div class="grid grid-cols-2 gap-2 h-full">
+                    <div class="border-r border-black pr-1">
+                      <span class="box-num">53</span>
+                      <span class="text-[6pt]">I do hereby confirm that all particulars entered by me or on my behalf in the CusDec and electronically transferred to the Sri Lanka Customs are true &amp; correct.</span>
+                      <div class="mt-4 text-[6.5pt] font-bold">SIGNATURE OF IMPORTER/EXPORTER/AGENT</div>
+                    </div>
+                    <div>
+                      <span class="box-num">54</span><span class="box-label">DECLARATION SUBMITTED BY</span>
+                      <div class="mt-6 text-[6.5pt] font-bold">SIGNATURE OF CUSTOMS HOUSE AGENT</div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // USER STORAGE & MANAGEMENT
+    const DEFAULT_USERS = {
+      "admin": { pass: "admin123", role: "Administrator", isAdmin: true },
+      "lalan": { pass: "lalan2026", role: "Lalan Declarant", isAdmin: false }
+    };
+
+    let currentUsername = null;
+
+    function getUsers() {
+      try {
+        const stored = localStorage.getItem('cusdec_users_db');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+            return parsed;
+          }
+        }
+      } catch (e) {}
+      localStorage.setItem('cusdec_users_db', JSON.stringify(DEFAULT_USERS));
+      return { ...DEFAULT_USERS };
+    }
+
+    function saveUsers(usersObj) {
+      localStorage.setItem('cusdec_users_db', JSON.stringify(usersObj));
+    }
+
+    function checkSession() {
+      const users = getUsers();
+      const savedUser = localStorage.getItem('cusdec_auth_user') || sessionStorage.getItem('cusdec_auth_user');
+      if (savedUser && users[savedUser]) {
+        showApp(savedUser);
+      } else {
+        document.getElementById('login-screen').classList.remove('hidden');
+        document.getElementById('app-container').classList.add('hidden');
+      }
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const users = getUsers();
+      const username = document.getElementById('login-username').value.trim().toLowerCase();
+      const password = document.getElementById('login-password').value;
+      const remember = document.getElementById('remember-me').checked;
+      const errBox = document.getElementById('login-error');
+
+      if (users[username] && users[username].pass === password) {
+        errBox.classList.add('hidden');
+        if (remember) {
+          localStorage.setItem('cusdec_auth_user', username);
+        } else {
+          sessionStorage.setItem('cusdec_auth_user', username);
+        }
+        showApp(username);
+      } else {
+        errBox.classList.remove('hidden');
+      }
+    }
+
+    function showApp(username) {
+      const users = getUsers();
+      currentUsername = username;
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('app-container').classList.remove('hidden');
+      document.getElementById('badge-text').textContent = `${users[username].role} (${username})`;
+      loadSampleData();
+    }
+
+    function handleLogout() {
+      currentUsername = null;
+      localStorage.removeItem('cusdec_auth_user');
+      sessionStorage.removeItem('cusdec_auth_user');
+      document.getElementById('login-password').value = '';
+      document.getElementById('app-container').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+    }
+
+    function togglePasswordVisibility() {
+      const pw = document.getElementById('login-password');
+      const btn = document.getElementById('toggle-pw-btn');
+      if (pw.type === 'password') {
+        pw.type = 'text';
+        btn.textContent = 'Hide';
+      } else {
+        pw.type = 'password';
+        btn.textContent = 'Show';
+      }
+    }
+
+    function fillDemoCredentials() {
+      const users = getUsers();
+      document.getElementById('login-username').value = 'admin';
+      document.getElementById('login-password').value = users['admin'] ? users['admin'].pass : 'admin123';
+      document.getElementById('login-error').classList.add('hidden');
+    }
+
+    // USER MANAGEMENT MODAL FUNCTIONS
+    function openUserModal() {
+      const users = getUsers();
+      const userObj = users[currentUsername];
+      document.getElementById('modal-current-user').textContent = `${userObj.role} (${currentUsername})`;
+      document.getElementById('pw-change-msg').classList.add('hidden');
+      document.getElementById('add-user-msg').classList.add('hidden');
+      document.getElementById('old-pw-input').value = '';
+      document.getElementById('new-pw-input').value = '';
+
+      const adminSec = document.getElementById('admin-user-section');
+      if (userObj && userObj.isAdmin) {
+        adminSec.classList.remove('hidden');
+        renderUsersTable();
+      } else {
+        adminSec.classList.add('hidden');
+      }
+      document.getElementById('user-modal').classList.remove('hidden');
+    }
+
+    function closeUserModal() {
+      document.getElementById('user-modal').classList.add('hidden');
+    }
+
+    function showStatusMsg(elId, text, isError) {
+      const el = document.getElementById(elId);
+      el.textContent = text;
+      el.className = isError
+        ? "text-xs font-medium px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-700"
+        : "text-xs font-medium px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700";
+      el.classList.remove('hidden');
+    }
+
+    function handleChangeOwnPassword(e) {
+      e.preventDefault();
+      const users = getUsers();
+      const oldPw = document.getElementById('old-pw-input').value;
+      const newPw = document.getElementById('new-pw-input').value.trim();
+
+      if (users[currentUsername].pass !== oldPw) {
+        showStatusMsg('pw-change-msg', 'Current password is incorrect.', true);
+        return;
+      }
+      if (newPw.length < 4) {
+        showStatusMsg('pw-change-msg', 'New password must be at least 4 characters.', true);
+        return;
+      }
+      users[currentUsername].pass = newPw;
+      saveUsers(users);
+      document.getElementById('old-pw-input').value = '';
+      document.getElementById('new-pw-input').value = '';
+      showStatusMsg('pw-change-msg', 'Password updated successfully!', false);
+    }
+
+    function handleAddUser(e) {
+      e.preventDefault();
+      const users = getUsers();
+      const uname = document.getElementById('new-username').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const role = document.getElementById('new-user-role').value.trim();
+      const pass = document.getElementById('new-user-pass').value.trim();
+
+      if (!uname) {
+        showStatusMsg('add-user-msg', 'Please enter a valid username (letters/numbers).', true);
+        return;
+      }
+      if (users[uname]) {
+        showStatusMsg('add-user-msg', `Username "${uname}" already exists.`, true);
+        return;
+      }
+      users[uname] = { pass, role: role || uname, isAdmin: false };
+      saveUsers(users);
+      document.getElementById('new-username').value = '';
+      document.getElementById('new-user-role').value = '';
+      document.getElementById('new-user-pass').value = '';
+      showStatusMsg('add-user-msg', `User "${uname}" added successfully!`, false);
+      renderUsersTable();
+    }
+
+    function resetUserPassword(uname) {
+      const newPass = prompt(`Enter new password for "${uname}" (min 4 characters):`);
+      if (newPass === null) return;
+      if (newPass.trim().length < 4) {
+        alert("Password must be at least 4 characters.");
+        return;
+      }
+      const users = getUsers();
+      if (users[uname]) {
+        users[uname].pass = newPass.trim();
+        saveUsers(users);
+        showStatusMsg('add-user-msg', `Password reset for "${uname}".`, false);
+      }
+    }
+
+    function deleteUser(uname) {
+      if (uname === 'admin' || uname === currentUsername) return;
+      if (!confirm(`Delete user "${uname}"?`)) return;
+      const users = getUsers();
+      delete users[uname];
+      saveUsers(users);
+      renderUsersTable();
+      showStatusMsg('add-user-msg', `User "${uname}" removed.`, false);
+    }
+
+    function resetDefaultUsers() {
+      if (!confirm("Reset all users and passwords back to default (admin / lalan)?")) return;
+      saveUsers({ ...DEFAULT_USERS });
+      renderUsersTable();
+      showStatusMsg('add-user-msg', 'All accounts reset to default.', false);
+    }
+
+    function renderUsersTable() {
+      const users = getUsers();
+      const tbody = document.getElementById('users-table-body');
+      tbody.innerHTML = '';
+
+      Object.keys(users).forEach(uname => {
+        const u = users[uname];
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-mono font-bold text-slate-900">${uname}</td>
+          <td class="px-3 py-2 text-slate-700">${u.role}</td>
+          <td class="px-3 py-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.isAdmin ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}">
+              ${u.isAdmin ? 'ADMIN' : 'USER'}
+            </span>
+          </td>
+          <td class="px-3 py-2 text-right space-x-2">
+            <button type="button" onclick="resetUserPassword('${uname}')" class="text-blue-600 hover:underline font-semibold">Reset PW</button>
+            ${(!u.isAdmin && uname !== currentUsername)
+              ? `<button type="button" onclick="deleteUser('${uname}')" class="text-red-600 hover:underline font-semibold">Delete</button>`
+              : ''}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    const SAMPLE_DATA = {
+      exporter_tin: "1140487717000",
+      exporter_name: "LALAN RUBBERS PVT LTD\n95B ZONE A EXPORT PROCESSING ZONE\nBIYAGAMA MALWANA\nVALID UP TO 13/10/2027",
+      declarant_tin: "5901734287000",
+      declarant_name: "LALAN MARKETING SERVICES\n344, GRANDPASS RD., COLOMBO 14.\nTL 30/09/2027 CHA EXP",
+      office_code: "BIBE1",
+      warehouse_id: "7804232M03AS0400",
+      invoice_no: "SESO007299",
+      invoice_date: "12-Nov-2026",
+      consignee_name: "INTERNATIONAL CONSOLIDATED BUSINESS\nGROUP PTY LTD\nLEVEL 3\n333 FLINDERS LANE MELBOURNE VIC 3000\nAUSTRALIA",
+      vessel_name: "CMA CGM MANTA RAY",
+      voyage_date: "P0E1 15/11/2026",
+      dest_country_code: "AU",
+      port_code: "AUMEL",
+      port_name: "MELBOURNE",
+      bank_code: "7278",
+      bank_name: "Sampath Bank",
+      incoterm: "FOB",
+      goods_desc: "870,912 PCS OF LATEX GLOVES",
+      hs_code: "40151900",
+      proc_code: "1378",
+      nat_proc: "95N",
+      packages: 1008,
+      gross_weight: 5714.60,
+      net_weight: 4615.80,
+      container_marks: "01X20FT FCL",
+      pref_quota: "GSP / 1-20",
+      currency: "USD",
+      fob_value: 25779.00,
+      ex_rate: 337.0056
+    };
+
+    function loadSampleData() {
+      Object.keys(SAMPLE_DATA).forEach(key => {
+        const el = document.getElementById(key);
+        if (el) el.value = SAMPLE_DATA[key];
+      });
+      syncAll();
+    }
+
+    function clearInvoiceFields() {
+      document.querySelectorAll('#tab-1 input, #tab-1 textarea').forEach(el => {
+        if (el.type !== 'file') {
+          el.value = '';
+        }
+      });
+      const fileInput = document.getElementById('pdf-upload');
+      if (fileInput) fileInput.value = '';
+      const status = document.getElementById('upload-status');
+      status.className = "text-xs text-slate-600 mt-1 font-medium";
+      status.textContent = 'All fields cleared — Upload your INVOICE.pdf to extract data automatically';
+      syncAll();
+    }
+
+    function switchTab(tabNum) {
+      [1, 2, 3].forEach(n => {
+        document.getElementById(`tab-${n}`).classList.toggle('hidden', n !== tabNum);
+        const btn = document.getElementById(`tab-btn-${n}`);
+        if (n === tabNum) {
+          btn.classList.add('border-emerald-400', 'text-emerald-400');
+          btn.classList.remove('border-transparent', 'text-slate-300');
+        } else {
+          btn.classList.remove('border-emerald-400', 'text-emerald-400');
+          btn.classList.add('border-transparent', 'text-slate-300');
+        }
+      });
+      syncAll();
+    }
+
+    async function processPDFFile(file) {
+      if (!file) return;
+      const status = document.getElementById('upload-status');
+      status.className = "text-xs text-amber-600 mt-1 font-bold";
+      status.textContent = `Reading ${file.name}...`;
+
+      try {
+        if (typeof pdfjsLib === 'undefined') {
+          throw new Error("PDF.js library failed to load. Check internet connection.");
+        }
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          fullText += content.items.map(item => item.str).join(" ") + "\n";
+        }
+        document.getElementById('raw-invoice-text').value = fullText;
+        extractFromText(fullText);
+        status.className = "text-xs text-emerald-700 mt-1 font-bold";
+        status.textContent = `Successfully extracted data from ${file.name}!`;
+      } catch (err) {
+        status.className = "text-xs text-red-600 mt-1 font-bold";
+        status.textContent = "Error reading PDF: " + err.message;
+      }
+    }
+
+    function handlePDFUpload(event) {
+      const file = event.target.files[0];
+      processPDFFile(file);
+      event.target.value = "";
+    }
+
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-emerald-500', 'bg-emerald-50');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-emerald-500', 'bg-emerald-50');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-emerald-500', 'bg-emerald-50');
+      const file = e.dataTransfer.files[0];
+      if (file) processPDFFile(file);
+    });
+
+    function parseRawText() {
+      const txt = document.getElementById('raw-invoice-text').value;
+      if (txt.trim()) extractFromText(txt);
+    }
+
+    function extractFromText(text) {
+      const clean = text.replace(/\s+/g, ' ');
+
+      const invMatch = clean.match(/\b([A-Z]{2,4}\d{5,8})\b/);
+      if (invMatch) document.getElementById('invoice_no').value = invMatch[1];
+
+      const dateMatch = clean.match(/\b(\d{1,2}-[A-Za-z]{3}-\d{4})\b/);
+      if (dateMatch) document.getElementById('invoice_date').value = dateMatch[1];
+
+      const fobMatch = clean.match(/(?:FOB|TOTAL:?)\s*([\d,]+\.\d{2,4})/i);
+      if (fobMatch) document.getElementById('fob_value').value = parseFloat(fobMatch[1].replace(/,/g, ''));
+
+      const grossMatch = clean.match(/GROSS WEIGHT\s*([\d,]+\.\d{2})\s*Kg/i);
+      if (grossMatch) document.getElementById('gross_weight').value = parseFloat(grossMatch[1].replace(/,/g, ''));
+
+      const netMatch = clean.match(/NET WEIGHT\s*([\d,]+\.\d{2})\s*Kg/i);
+      if (netMatch) document.getElementById('net_weight').value = parseFloat(netMatch[1].replace(/,/g, ''));
+
+      const pkgMatch = clean.match(/([\d,]+)\s*M\/C/i);
+      if (pkgMatch) document.getElementById('packages').value = parseInt(pkgMatch[1].replace(/,/g, ''), 10);
+
+      const qtyMatch = clean.match(/Total Qty\s*([\d,]+)\s*PCS/i) || clean.match(/([\d,]+\.\d{2})\s*PCS/i);
+      if (qtyMatch) {
+        const pcs = Math.round(parseFloat(qtyMatch[1].replace(/,/g, ''))).toLocaleString('en-US');
+        document.getElementById('goods_desc').value = `${pcs} PCS OF LATEX GLOVES`;
+      }
+
+      const vesselMatch = clean.match(/VESSEL\s+([A-Z0-9\s]+?)\s+(P0E1|POE1|[A-Z0-9]{4})/i);
+      if (vesselMatch) {
+        document.getElementById('vessel_name').value = vesselMatch[1].trim();
+      }
+
+      const vDateMatch = clean.match(/VESSEL DATE\s*(\d{2}\/\d{2}\/\d{4})/i);
+      if (vDateMatch && vesselMatch) {
+        document.getElementById('voyage_date').value = `${vesselMatch[2]} ${vDateMatch[1]}`;
+      }
+
+      const consigneeMatch = clean.match(/BILLING ADDRESS\s+(.+?)\s+INVOICE NO/i);
+      if (consigneeMatch) {
+        document.getElementById('consignee_name').value = consigneeMatch[1].trim().toUpperCase();
+      }
+
+      const destMatch = clean.match(/FINAL DESTINATION\s+DELIVERY TERM\s+([A-Za-z\s]+?)\s+Free on Board/i);
+      if (destMatch) {
+        const port = destMatch[1].trim().toUpperCase();
+        document.getElementById('port_name').value = port;
+        if (port.includes('MELBOURNE')) {
+          document.getElementById('dest_country_code').value = 'AU';
+          document.getElementById('port_code').value = 'AUMEL';
+        }
+      }
+
+      syncAll();
+    }
+
+    function fmtNum(num, decimals = 2) {
+      return Number(num || 0).toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function escapeXml(unsafe) {
+      return String(unsafe || '').replace(/[<>&'"]/g, c => ({
+        '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
+      }[c]));
+    }
+
+    function getFormData() {
+      const fob = parseFloat(document.getElementById('fob_value').value) || 0;
+      const ex = parseFloat(document.getElementById('ex_rate').value) || 1;
+      const statLkrExact = (fob * ex).toFixed(2);
+      const statLkrRound = Math.round(fob * ex);
+      const prefQuota = (document.getElementById('pref_quota').value || "GSP / 1-20").split('/');
+
+      return {
+        exporter_tin: document.getElementById('exporter_tin').value,
+        exporter_name: document.getElementById('exporter_name').value,
+        declarant_tin: document.getElementById('declarant_tin').value,
+        declarant_name: document.getElementById('declarant_name').value,
+        office_code: document.getElementById('office_code').value,
+        warehouse_id: document.getElementById('warehouse_id').value,
+        invoice_no: document.getElementById('invoice_no').value,
+        invoice_date: document.getElementById('invoice_date').value,
+        consignee_name: document.getElementById('consignee_name').value,
+        vessel_name: document.getElementById('vessel_name').value,
+        voyage_date: document.getElementById('voyage_date').value,
+        dest_country_code: document.getElementById('dest_country_code').value,
+        port_code: document.getElementById('port_code').value,
+        port_name: document.getElementById('port_name').value,
+        bank_code: document.getElementById('bank_code').value,
+        bank_name: document.getElementById('bank_name').value,
+        incoterm: document.getElementById('incoterm').value,
+        goods_desc: document.getElementById('goods_desc').value,
+        hs_code: document.getElementById('hs_code').value,
+        proc_code: document.getElementById('proc_code').value,
+        nat_proc: document.getElementById('nat_proc').value,
+        packages: parseInt(document.getElementById('packages').value) || 0,
+        gross_weight: parseFloat(document.getElementById('gross_weight').value) || 0,
+        net_weight: parseFloat(document.getElementById('net_weight').value) || 0,
+        container_marks: document.getElementById('container_marks').value,
+        preference: (prefQuota[0] || 'GSP').trim(),
+        quota: (prefQuota[1] || '1-20').trim(),
+        currency: document.getElementById('currency').value,
+        fob_value: fob,
+        ex_rate: ex,
+        stat_lkr_exact: statLkrExact,
+        stat_lkr_round: statLkrRound
+      };
+    }
+
+    function generateXMLString(d) {
+      const countryName = d.dest_country_code === 'AU' ? 'Australia' : d.dest_country_code;
+      return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<ASYCUDA id="15644538">
+<Export_release>
+<Date_of_exit>11/14/26</Date_of_exit>
+<Time_of_exit>3:29 AM</Time_of_exit>
+<Actual_office_of_exit_code><null/></Actual_office_of_exit_code>
+<Actual_office_of_exit_name><null/></Actual_office_of_exit_name>
+<Exit_reference><null/></Exit_reference>
+<Comments><null/></Comments>
+</Export_release>
+<Property>
+<Sad_flow>E</Sad_flow>
+<Forms>
+<Number_of_the_form>1</Number_of_the_form>
+<Total_number_of_forms>1</Total_number_of_forms>
+</Forms>
+<Nbers>
+<Number_of_loading_lists/>
+<Total_number_of_items>1</Total_number_of_items>
+<Total_number_of_packages>${d.packages}</Total_number_of_packages>
+</Nbers>
+<Place_of_declaration><null/></Place_of_declaration>
+<Date_of_declaration/>
+<Selected_page>1</Selected_page>
+</Property>
+<Identification>
+<Office_segment>
+<Customs_clearance_office_code>${escapeXml(d.office_code)}</Customs_clearance_office_code>
+<Customs_Clearance_office_name>Biyagama Boi Exports(Sea Cargo)</Customs_Clearance_office_name>
+</Office_segment>
+<Type>
+<Type_of_declaration>EX</Type_of_declaration>
+<Declaration_gen_procedure_code>1</Declaration_gen_procedure_code>
+<Type_of_transit_document>01</Type_of_transit_document>
+</Type>
+<Manifest_reference_number><null/></Manifest_reference_number>
+<Registration>
+<Serial_number>E</Serial_number>
+<Number>31743</Number>
+<Date>11/13/26</Date>
+</Registration>
+<Assessment>
+<Serial_number>A</Serial_number>
+<Number>31913</Number>
+<Date>11/13/26</Date>
+</Assessment>
+</Identification>
+<Traders>
+<Exporter>
+<Exporter_code>${escapeXml(d.exporter_tin)}</Exporter_code>
+<Exporter_name>${escapeXml(d.exporter_name)}</Exporter_name>
+</Exporter>
+<Consignee>
+<Consignee_code><null/></Consignee_code>
+<Consignee_name>${escapeXml(d.consignee_name)}</Consignee_name>
+</Consignee>
+</Traders>
+<Declarant>
+<Declarant_code>${escapeXml(d.declarant_tin)}</Declarant_code>
+<Declarant_name>${escapeXml(d.declarant_name)}</Declarant_name>
+<Reference>
+<Number>${escapeXml(d.invoice_no)}</Number>
+</Reference>
+</Declarant>
+<General_information>
+<Country>
+<Country_first_destination>${escapeXml(d.dest_country_code)}</Country_first_destination>
+<Trading_country>${escapeXml(d.dest_country_code)}</Trading_country>
+<Export>
+<Export_country_code>LK</Export_country_code>
+<Export_country_name>Sri Lanka</Export_country_name>
+</Export>
+<Destination>
+<Destination_country_code>${escapeXml(d.dest_country_code)}</Destination_country_code>
+<Destination_country_name>${escapeXml(countryName)}</Destination_country_name>
+</Destination>
+<Country_of_origin_name>Sri Lanka</Country_of_origin_name>
+</Country>
+<CAP>1</CAP>
+</General_information>
+<Transport>
+<Means_of_transport>
+<Departure_arrival_information>
+<Identity>${escapeXml(d.vessel_name)}</Identity>
+<Nationality>${escapeXml(d.dest_country_code)}</Nationality>
+</Departure_arrival_information>
+<Border_information>
+<Identity>${escapeXml(d.voyage_date)}</Identity>
+<Mode>1</Mode>
+</Border_information>
+</Means_of_transport>
+<Container_flag>true</Container_flag>
+<Delivery_terms>
+<Code>${escapeXml(d.incoterm)}</Code>
+</Delivery_terms>
+<Border_office>
+<Code>VSEZG</Code>
+<Name>Sepz - Green Channel</Name>
+</Border_office>
+<Place_of_loading>
+<Code>${escapeXml(d.port_code)}</Code>
+<Name>${escapeXml(d.port_name)}</Name>
+</Place_of_loading>
+<Location_of_goods>CWIT</Location_of_goods>
+</Transport>
+<Financial>
+<Bank>
+<Code>${escapeXml(d.bank_code)}</Code>
+<Name>${escapeXml(d.bank_name)}</Name>
+<Branch>001</Branch>
+<Reference>${escapeXml(d.invoice_no)}</Reference>
+</Bank>
+<Terms>
+<Code>70</Code>
+<Description>Open Account</Description>
+</Terms>
+<Mode_of_payment>CASH</Mode_of_payment>
+<Amounts>
+<Global_taxes>0</Global_taxes>
+<Totals_taxes>0</Totals_taxes>
+</Amounts>
+</Financial>
+<Warehouse>
+<Identification>${escapeXml(d.warehouse_id)}</Identification>
+<Delay>100</Delay>
+</Warehouse>
+<Valuation>
+<Calculation_working_mode>0</Calculation_working_mode>
+<Total_cost>0</Total_cost>
+<Total_CIF>${d.stat_lkr_round}</Total_CIF>
+<Gs_Invoice>
+<Amount_national_currency>${d.stat_lkr_exact}</Amount_national_currency>
+<Amount_foreign_currency>${d.fob_value}</Amount_foreign_currency>
+<Currency_code>${escapeXml(d.currency)}</Currency_code>
+</Gs_Invoice>
+<Total>
+<Total_invoice>${d.fob_value}</Total_invoice>
+<Total_weight>${d.gross_weight}</Total_weight>
+</Total>
+</Valuation>
+<Item>
+<Packages>
+<Number_of_packages>${d.packages}</Number_of_packages>
+<Marks1_of_packages>${escapeXml(d.container_marks)}</Marks1_of_packages>
+<Kind_of_packages_code>CT</Kind_of_packages_code>
+<Kind_of_packages_name>Carton</Kind_of_packages_name>
+</Packages>
+<IncoTerms>
+<Code>${escapeXml(d.incoterm)}</Code>
+</IncoTerms>
+<Tarification>
+<HScode>
+<Commodity_code>${escapeXml(d.hs_code)}</Commodity_code>
+<Precision_1>00</Precision_1>
+</HScode>
+<Preference_code>${escapeXml(d.preference)}</Preference_code>
+<Extended_customs_procedure>${escapeXml(d.proc_code)}</Extended_customs_procedure>
+<National_customs_procedure>${escapeXml(d.nat_proc)}</National_customs_procedure>
+<Quota>
+<QuotaCode>${escapeXml(d.quota)}</QuotaCode>
+</Quota>
+<Supplementary_unit>
+<Suppplementary_unit_code>KGM</Suppplementary_unit_code>
+<Suppplementary_unit_name>Kilogram</Suppplementary_unit_name>
+<Suppplementary_unit_quantity>${d.net_weight}</Suppplementary_unit_quantity>
+</Supplementary_unit>
+<Item_price>${d.fob_value}</Item_price>
+<Value_item>0-0</Value_item>
+</Tarification>
+<Goods_description>
+<Country_of_origin_code>LK</Country_of_origin_code>
+<Description_of_goods>${escapeXml(d.goods_desc)}</Description_of_goods>
+</Goods_description>
+<Licence_number>${escapeXml(d.currency)}</Licence_number>
+<Amount_deducted_from_licence>${d.fob_value}</Amount_deducted_from_licence>
+<Quantity_deducted_from_licence>${d.net_weight}</Quantity_deducted_from_licence>
+<Free_text_2>380(${escapeXml(d.invoice_no)}</Free_text_2>
+<Taxation>
+<Item_taxes_amount>0</Item_taxes_amount>
+</Taxation>
+<Valuation_item>
+<Weight_itm>
+<Gross_weight_itm>${d.gross_weight}</Gross_weight_itm>
+<Net_weight_itm>${d.net_weight}</Net_weight_itm>
+</Weight_itm>
+<Total_cost_itm>0</Total_cost_itm>
+<Total_CIF_itm>${d.stat_lkr_round}</Total_CIF_itm>
+<Statistical_value>${d.stat_lkr_round}</Statistical_value>
+<Alpha_coeficient_of_apportionment>1</Alpha_coeficient_of_apportionment>
+<Item_Invoice>
+<Amount_national_currency>${d.stat_lkr_exact}</Amount_national_currency>
+<Amount_foreign_currency>${d.fob_value}</Amount_foreign_currency>
+<Currency_code>${escapeXml(d.currency)}</Currency_code>
+</Item_Invoice>
+</Valuation_item>
+</Item>
+</ASYCUDA>`;
+    }
+
+    function syncAll() {
+      const d = getFormData();
+      document.getElementById('stat_value_display').textContent = `LKR ${fmtNum(d.stat_lkr_round, 0)}`;
+
+      // Update XML Preview
+      document.getElementById('xml-output').textContent = generateXMLString(d);
+
+      // Update CUSDEC Printable Sheet
+      document.getElementById('c_exp_tin').textContent = d.exporter_tin;
+      document.getElementById('c_exp_name').textContent = d.exporter_name;
+      document.getElementById('c_office_code').textContent = d.office_code;
+      document.getElementById('c_tot_pkg').textContent = fmtNum(d.packages, 2);
+      document.getElementById('c_seq_ref').textContent = d.invoice_no;
+      document.getElementById('c_consignee').textContent = d.consignee_name;
+      document.getElementById('c_cty_first').textContent = d.dest_country_code;
+      document.getElementById('c_cty_trade').textContent = d.dest_country_code;
+      document.getElementById('c_dec_tin').textContent = d.declarant_tin;
+      document.getElementById('c_dec_name').textContent = d.declarant_name;
+      document.getElementById('c_dst_code_a').textContent = d.dest_country_code;
+      document.getElementById('c_dst_name').textContent = d.dest_country_code === 'AU' ? 'Australia' : d.dest_country_code;
+      document.getElementById('c_vessel').textContent = (d.vessel_name || d.dest_country_code) ? `${d.vessel_name}   ${d.dest_country_code}`.trim() : '';
+      document.getElementById('c_incoterm').textContent = d.incoterm;
+      document.getElementById('c_voyage').textContent = d.voyage_date;
+      document.getElementById('c_curr').textContent = d.currency;
+      document.getElementById('c_inv_amt').textContent = fmtNum(d.fob_value, 2);
+      document.getElementById('c_ex_rate').textContent = document.getElementById('ex_rate').value ? d.ex_rate.toFixed(4) : '';
+      document.getElementById('c_port_code').textContent = d.port_code;
+      document.getElementById('c_port_name').textContent = d.port_name;
+      document.getElementById('c_bank_code').textContent = d.bank_code;
+      document.getElementById('c_bank_name').textContent = d.bank_name;
+      document.getElementById('c_bank_ref').textContent = d.invoice_no;
+      document.getElementById('c_marks').textContent = d.container_marks;
+      document.getElementById('c_pkg_kind').textContent = d.packages ? `${fmtNum(d.packages, 2)} CT Carton` : '';
+      document.getElementById('c_goods_desc').textContent = d.goods_desc;
+      document.getElementById('c_hs_code').textContent = d.hs_code;
+      document.getElementById('c_gross_wt').textContent = fmtNum(d.gross_weight, 2);
+      document.getElementById('c_pref').textContent = d.preference;
+      document.getElementById('c_proc').textContent = (d.proc_code || d.nat_proc) ? `${d.proc_code} | ${d.nat_proc}` : '';
+      document.getElementById('c_net_wt').textContent = fmtNum(d.net_weight, 2);
+      document.getElementById('c_quota').textContent = d.quota;
+      document.getElementById('c_lic_curr').textContent = d.currency;
+      document.getElementById('c_dval').textContent = fmtNum(d.fob_value, 0);
+      document.getElementById('c_dqty').textContent = Math.round(d.net_weight);
+      document.getElementById('c_att_doc').textContent = d.invoice_no ? `380(${d.invoice_no}` : '';
+      document.getElementById('c_uom_qty').textContent = d.net_weight ? fmtNum(d.net_weight, 2) : '';
+      document.getElementById('c_item_price').textContent = fmtNum(d.fob_value, 0);
+      document.getElementById('c_stat_val').textContent = fmtNum(d.stat_lkr_round, 0);
+      document.getElementById('c_warehouse').textContent = d.warehouse_id ? `${d.warehouse_id}     100` : '';
+      document.getElementById('c_c_curr').textContent = d.currency;
+      document.getElementById('c_c_val').textContent = fmtNum(d.fob_value, 2);
+    }
+
+    function downloadXML() {
+      const d = getFormData();
+      const xml = generateXMLString(d);
+      const blob = new Blob([xml], { type: 'application/xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${d.invoice_no || 'ASYCUDA_EXPORT'}.xml`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function copyXML() {
+      const xml = document.getElementById('xml-output').textContent;
+      navigator.clipboard.writeText(xml).then(() => {
+        const btn = document.getElementById('copy-xml-btn');
+        btn.textContent = "Copied!";
+        setTimeout(() => btn.textContent = "Copy XML to Clipboard", 2000);
+      });
+    }
+
+    function printCusdec() {
+      switchTab(3);
+      setTimeout(() => window.print(), 150);
+    }
+
+    // Check login session on load
+    window.addEventListener('DOMContentLoaded', checkSession);
+  </script>
+</body>
+</html>
